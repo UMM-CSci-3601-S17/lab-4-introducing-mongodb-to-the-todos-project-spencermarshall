@@ -16,9 +16,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+
+import static com.mongodb.client.model.Filters.eq;
+
 public class TodoController {
 
-    private final MongoCollection<Document> todoCollection;
+    private final MongoCollection<Document> TodoCollection;
 
     public TodoController() throws IOException {
         // Set up our server address
@@ -32,85 +35,48 @@ public class TodoController {
         // Try connecting to a database
         MongoDatabase db = mongoClient.getDatabase("test");
 
-        todoCollection = db.getCollection("todos");
+        TodoCollection = db.getCollection("todos");
     }
 
-    public MongoCollection<Document> listTodos(Map<String, String[]> queryParameter) {
-        MongoCollection<Document> filteredTodos = todoCollection;
+    // List Todos
+    public String listTodos(Map<String, String[]> queryParams) {
+        Document filterDoc = new Document();
 
-        //limited list of todos
-        if (queryParameter.containsKey("limit")) {
-            int listLimit = Integer.parseInt(queryParameter.get("limit")[0]);
-            filteredTodos = limitedList(filteredTodos, listLimit);
-        }
+        /*if (queryParams.containsKey("status")) {
+            boolean targetStatus = queryParams.get("status")[0];
+            filterDoc = filterDoc.append("age", targetAge);
+        }*/
 
-        //status todos
-        if(queryParameter.containsKey("status")) {
-            Boolean progress = false;
-            String stateOfTodo = queryParameter.get("status")[0];
-            if(stateOfTodo.equals("complete")){
-                progress = true;
-            }
-            filteredTodos = filterStatusTodos(filteredTodos, progress);
-        }
+        FindIterable<Document> matchingTodos = TodoCollection.find(filterDoc);
 
-        //Todos with specified word in body
-        if(queryParameter.containsKey("contains")){
-            String specifiedWord = queryParameter.get("contains")[0];
-            filteredTodos = containedInBody(filteredTodos, specifiedWord);
-        }
-
-        //Todos specified by owner
-        if(queryParameter.containsKey("owner")){
-            String whoseTodo = queryParameter.get("owner")[0];
-            filteredTodos = findTheirTodos(filteredTodos, whoseTodo);
-        }
-
-        //Todos specified by category
-        if(queryParameter.containsKey("category")){
-            String whatCategory = queryParameter.get("category")[0];
-            filteredTodos = filterByCategory(filteredTodos, whatCategory);
-        }
-
-        return filteredTodos;
+        return JSON.serialize(matchingTodos);
     }
 
-    // Returns a Single one
-    public Todo getTodo(String id){
-        return Arrays.stream(todos).filter(x -> x._id.equals(id)).findFirst().orElse(null);
+    // Get a single Todo
+    public String getTodo(String id) {
+        FindIterable<Document> jsonTodos
+                = TodoCollection
+                .find(eq("_id", new ObjectId(id)));
+
+        Iterator<Document> iterator = jsonTodos.iterator();
+
+        Document Todo = iterator.next();
+
+        return Todo.toJson();
     }
 
-    //Return specified number of todos
-    public Todo[] limitedList(Todo[] filteredTodos, int listLimit){
-        filteredTodos = new Todo[listLimit];
-
-        for(int i = 0; i < listLimit; i++) {
-            filteredTodos[i] = todos[i];
-        }
-
-        return filteredTodos;
+    // Get the average age of all Todos by company
+    public String getAverageAgeByCompany() {
+        AggregateIterable<Document> documents
+                = TodoCollection.aggregate(
+                Arrays.asList(
+                        Aggregates.group("$company",
+                                Accumulators.avg("averageAge", "$age")),
+                        Aggregates.sort(Sorts.ascending("_id"))
+                ));
+        System.err.println(JSON.serialize(documents));
+        return JSON.serialize(documents);
     }
-
-    //returns completed or incomleted todos
-    public Todo[] filterStatusTodos(Todo[] statusTodos, boolean todoStatus){
-        return Arrays.stream(statusTodos).filter(x -> x.status == todoStatus).toArray(Todo[]::new);
-    }
-
-    //returns todos with specified word
-    public Todo[] containedInBody(Todo[] todosWithWord, String specifiedWord){
-        return Arrays.stream(todosWithWord).filter(x -> x.body.toLowerCase().contains(specifiedWord.toLowerCase())).toArray(Todo[]::new);
-    }
-
-    //returns todos of specified owner
-    //Made it so it will automatically remove whitespaces when placed in URL
-    public Todo[] findTheirTodos(Todo[] ownerTodos, String whoseTodo){
-        return Arrays.stream(ownerTodos).filter(x -> x.owner.replace(" ","").equalsIgnoreCase(whoseTodo.replace(" ",""))).toArray(Todo[]::new);
-    }
-
-    //returns todos by category
-    public Todo[] filterByCategory(Todo[] categoryTodos, String whatCategory){
-        return Arrays.stream(categoryTodos).filter(x -> x.category.equalsIgnoreCase(whatCategory)).toArray(Todo[]::new);
-    }
-
+    
 
 }
