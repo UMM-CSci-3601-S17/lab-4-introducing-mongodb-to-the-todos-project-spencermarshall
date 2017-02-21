@@ -49,6 +49,11 @@ public class Server {
             return userController.getUser(id);
         });
 
+        get("api/todoSummary", (req, res) -> {
+            res.type("application/json");
+            return null;
+        });
+
         // Get average ages by company
         get("api/avgUserAgeByCompany", (req, res) -> {
             res.type("application/json");
@@ -61,6 +66,7 @@ public class Server {
             res.status(404);
             return "Sorry, we couldn't find that!";
         });
+
 
     }
 
