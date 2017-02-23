@@ -1,0 +1,11 @@
+<ul class="list-group">
+    <li class="list-group-item list-group-item-info">
+        <input #input type="text" placeholder="Filter by body" (input)="searchTerm = $event.target.value">
+        <input #input type="text" placeholder="Filter by owner" (input)="targetOwner = $event.target.value">
+    </li>
+    <li class="list-group-item list-group-item-info">Todo Name</li>
+    <li *ngFor="let todo of todos | filterBy: {body: searchTerm} | filterBy: { owner: targetOwner }" class="list-group-item">
+        {{ todo.owner }}'s {{ todo.category }} todo: <br>
+        {{ todo.body }}
+    </li>
+</ul>
