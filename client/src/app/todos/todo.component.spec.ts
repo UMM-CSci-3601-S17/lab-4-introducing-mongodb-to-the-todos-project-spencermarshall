@@ -20,24 +20,24 @@ describe("Todo component", () => {
             getTodoById: (todoId: string) => Observable.of([
                 {
                     id: "chris_id",
-                    name: "Chris",
-                    age: 25,
-                    company: "UMM",
-                    email: "chris@this.that"
+                    owner: "Chris",
+                    status: true,
+                    body: "UMM",
+                    category: "chris@this.that"
                 },
                 {
                     id: "pat_id",
-                    name: "Pat",
-                    age: 37,
-                    company: "IBM",
-                    email: "pat@something.com"
+                    owner: "Pat",
+                    status: true,
+                    body: "IBM",
+                    category: "pat@something.com"
                 },
                 {
                     id: "jamie_id",
-                    name: "Jamie",
-                    age: 37,
-                    company: "Frogs, Inc.",
-                    email: "jamie@frogs.com"
+                    owner: "Jamie",
+                    status: false,
+                    body: "Frogs, Inc.",
+                    category: "jamie@frogs.com"
                 }
             ].find(todo => todo.id === todoId))
         };
@@ -59,8 +59,8 @@ describe("Todo component", () => {
     it("can retrieve Pat by ID", () => {
         todoComponent.setId("pat_id");
         expect(todoComponent.todo).toBeDefined();
-        expect(todoComponent.todo.name).toBe("Pat");
-        expect(todoComponent.todo.email).toBe("pat@something.com");
+        expect(todoComponent.todo.owner).toBe("Pat");
+        expect(todoComponent.todo.category).toBe("pat@something.com");
     });
 
     it("returns undefined for Santa", () => {
