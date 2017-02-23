@@ -77,6 +77,16 @@ public class TodoController {
         System.err.println(JSON.serialize(documents));
         return JSON.serialize(documents);
     }
+
+    /*public String summarizeTodos() {
+        AggregateIterable<Document> documents
+                = TodoCollection.aggregate(
+                Arrays.asList(
+                        Aggregates.group( "$category",
+                                Aggregates.count("$status"))
+                )
+        )
+    }*/
     
 
 }
