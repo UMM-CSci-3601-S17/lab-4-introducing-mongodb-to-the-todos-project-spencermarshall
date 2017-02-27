@@ -81,37 +81,110 @@ public class TodoController {
     }
 
     public String summarizeTodos() {
-        AggregateIterable<Document> documents
+        AggregateIterable<Document> ownerDocs
                 = TodoCollection.aggregate(
                 Arrays.asList(
                         Aggregates.group("$owner",
                                 Accumulators.push("status", "$status")),
                         Aggregates.sort(Sorts.ascending("status"))
                 ));
-        ArrayList<String> docs = new ArrayList<String>();
+        AggregateIterable<Document> categoryDocs
+                = TodoCollection.aggregate(
+                Arrays.asList(
+                        Aggregates.group("$category",
+                                Accumulators.push("status", "$status")),
+                        Aggregates.sort(Sorts.ascending("status"))
+                ));
+
+        //Creating necessary ArrayLists
+
+        //string versions of all owner docs
+        ArrayList<String> ownerList = new ArrayList<String>();
+        ArrayList<String> categoryList = new ArrayList<String>();
+
+        //strings containing names of owners and categories
+        ArrayList<String> owners = new ArrayList<String>();
+        ArrayList<String> categories = new ArrayList<String>();
+
+        //percentages of completed todos for each owner and category
+        ArrayList<Float> ownerPercent = new ArrayList<Float>();
+        ArrayList<Float> categoryPercent = new ArrayList<Float>();
 
 
-        for (Document element : documents) {
-            docs.add(element.values().toString());
+        for (Document element : ownerDocs) {
+            ownerList.add(element.values().toString());
+        }
+        for (Document element : categoryDocs) {
+            categoryList.add(element.values().toString());
         }
 
-        String temp = docs.get(0);
-        String toReturn = "";
-        String thingy = "";
-        int thingCount = 0;
-        for (int i = 0; i < docs.size(); i++) {
-            thingCount += instancesOfString(docs.get(i), "true");
+
+
+        //adding all owners and categories to an arraylist
+        for (String element : ownerList) {
+            owners.add(groupingOfDoc(element));
         }
+        for (String element : categoryList) {
+            categories.add(groupingOfDoc(element));
+        }
+
+        //calculating percents and adding them to arraylist
+        for (String element : ownerList) {
+            ownerPercent.add(instancesOfString(element, "true") * 100 /(instancesOfString(element,"false") + instancesOfString(element,"true")));
+        }
+        for (String element : categoryList) {
+            categoryPercent.add(instancesOfString(element, "true") * 100 / (instancesOfString(element,"false") + instancesOfString(element,"true")));
+        }
+
+        String allDocsString = "";
+
+        for (String element : ownerList) {
+            allDocsString += element;
+        }
+
+        String toReturn = "{\n";
+
+        toReturn += "\tpercentTodosComplete: ";
+        toReturn += instancesOfString(allDocsString, "true") * 100 /(instancesOfString(allDocsString,"false") + instancesOfString(allDocsString,"true")) + ",";
+        toReturn += "\n";
+
+        toReturn += "\tcategoriesPercentComplete: {\n";
+        for (int i = 0; i < categoryList.size(); i++) {
+            toReturn += "\t\t";
+            toReturn += categories.get(i);
+            toReturn += ": ";
+            toReturn += categoryPercent.get(i) + ",";
+            toReturn += "\n";
+        }
+        toReturn += "\t}\n";
+        toReturn += "\townersPercentComplete: {\n";
+        for (int i = 0; i < ownerList.size(); i++) {
+            toReturn += "\t\t";
+            toReturn += owners.get(i);
+            toReturn += ": ";
+            toReturn += ownerPercent.get(i) + ",";
+            toReturn += "\n";
+        }
+        toReturn += "\t}\n";
+        toReturn += "}";
+//
+
+
+//        String thingy = "";
+//        int thingCount = 0;
+//        for (int i = 0; i < docs.size(); i++) {
+//            thingCount += instancesOfString(docs.get(i), "true");
+//        }
 
 
         //System.err.println(JSON.serialize(documents));
-        return thingy + thingCount + "DocsSize:" + docs.size(); //JSON.serialize(documents);
+        return toReturn; //JSON.serialize(documents);
 
     }
 
 
-    public int instancesOfString(String body, String term) {
-        int count = 0;
+    public Float instancesOfString(String body, String term) {
+        Float count = Float.parseFloat("0");
         int termLength = term.length();
         int currentIndex = 0;
         int startingIndex = 0;
@@ -134,6 +207,23 @@ public class TodoController {
         }
 
         return count;
+    }
+
+    public String groupingOfDoc(String doc) {
+        int startingIndex = 0;
+        int endingIndex = 0;
+
+        while (!((doc.charAt(startingIndex) >= 97 && (doc.charAt(startingIndex) <= 122))
+                || ((doc.charAt(startingIndex)) >= 65 && (doc.charAt(startingIndex) <= 90)))) {
+            startingIndex++;
+            endingIndex++;
+        }
+        while (((doc.charAt(endingIndex) >= 97 && (doc.charAt(endingIndex) <= 122))
+                || ((doc.charAt(endingIndex)) >= 65 && (doc.charAt(endingIndex) <= 90)) || doc.charAt(endingIndex) == ' ')) {
+            endingIndex++;
+        }
+
+        return doc.substring(startingIndex,endingIndex);
     }
     
 
