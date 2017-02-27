@@ -13,9 +13,11 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -82,15 +84,56 @@ public class TodoController {
         AggregateIterable<Document> documents
                 = TodoCollection.aggregate(
                 Arrays.asList(
-                        Aggregates.group( "$category",
-                                Accumulators.avg("status", "$status")),
-                        Aggregates.sort(Sorts.ascending("category"))
+                        Aggregates.group("$owner",
+                                Accumulators.push("status", "$status")),
+                        Aggregates.sort(Sorts.ascending("status"))
                 ));
-
-        System.err.println(JSON.serialize(documents));
-        return JSON.serialize(documents);
+        ArrayList<String> docs = new ArrayList<String>();
 
 
+        for (Document element : documents) {
+            docs.add(element.values().toString());
+        }
+
+        String temp = docs.get(0);
+        String toReturn = "";
+        String thingy = "";
+        int thingCount = 0;
+        for (int i = 0; i < docs.size(); i++) {
+            thingCount += instancesOfString(docs.get(i), "true");
+        }
+
+
+        //System.err.println(JSON.serialize(documents));
+        return thingy + thingCount + "DocsSize:" + docs.size(); //JSON.serialize(documents);
+
+    }
+
+
+    public int instancesOfString(String body, String term) {
+        int count = 0;
+        int termLength = term.length();
+        int currentIndex = 0;
+        int startingIndex = 0;
+
+        while (body.charAt(startingIndex) != '[') {
+            startingIndex++;
+        }
+
+        currentIndex = startingIndex;
+
+        while (currentIndex < body.length()) {
+            if (body.substring(currentIndex).indexOf(term) == 0) {
+                count++;
+                currentIndex += termLength; //CHANGE THIS
+            }
+            else {
+                currentIndex++;
+            }
+
+        }
+
+        return count;
     }
     
 
